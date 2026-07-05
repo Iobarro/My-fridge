@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Qué hay en la nevera?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F7F1E6;
+    --cream-2:#FBF7EF;
+    --wood:#8A5A3B;
+    --wood-dark:#6B4227;
+    --wood-light:#A9754F;
+    --sage:#8CA37E;
+    --sage-dark:#6B8560;
+    --terracotta:#D98A63;
+    --terracotta-dark:#C06F49;
+    --ink:#3E362C;
+    --ink-soft:#6B6255;
+    --alert:#E4572E;
+    --warn:#E3A23C;
+    --ok:#6FA26B;
+    --paper:#FFFDF8;
+    --shadow: 0 8px 24px rgba(107,66,39,0.15);
+    --radius: 18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Quicksand', sans-serif;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(140,163,126,0.15), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(217,138,99,0.15), transparent 45%),
+      var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{
+    font-family:'Baloo 2', cursive;
+    font-weight:700;
+    color:var(--wood-dark);
+    margin:0;
+  }
+  .app{
+    max-width:640px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:20px 18px 40px;
+    position:relative;
+  }
+  .screen{ display:none; flex-direction:column; gap:18px; animation:fadeIn .4s ease; flex:1;}
+  .screen.active{ display:flex; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  /* Top bar */
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
+  .brand{ display:flex; align-items:center; gap:8px; }
+  .brand-emoji{ font-size:26px; }
+  .brand-name{ font-size:19px; }
+  .progress-wrap{ width:100%; height:10px; background:rgba(107,66,39,0.12); border-radius:20px; overflow:hidden; }
+  .progress-bar{ height:100%; width:0%; background:linear-gradient(90deg, var(--sage), var(--terracotta)); border-radius:20px; transition: width .4s ease; }
+
+  /* Welcome */
+  .hero{ text-align:center; padding:26px 8px 10px; }
+  .hero-emoji{ font-size:56px; display:block; margin-bottom:10px; }
+  .hero h1{ font-size:32px; line-height:1.15; }
+  .hero p{ color:var(--ink-soft); font-size:16px; margin-top:10px; line-height:1.5;}
+  .fridge-illustration{ display:flex; justify-content:center; margin:10px 0 6px;}
+
+  .btn{
+    font-family:'Baloo 2', cursive;
+    font-size:17px;
+    font-weight:600;
+    padding:14px 22px;
+    border-radius:14px;
+    border:none;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease, background .2s ease;
+    box-shadow: var(--shadow);
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn-primary{ background:var(--sage); color:white; }
+  .btn-primary:hover{ background:var(--sage-dark); }
+  .btn-secondary{ background:var(--paper); color:var(--wood-dark); border:2px solid var(--wood-light); }
+  .btn-secondary:hover{ background:var(--cream-2); }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); box-shadow:none; font-family:'Quicksand'; font-weight:600; text-decoration:underline; }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
+
+  /* Add food screen */
+  .card-panel{ background:var(--paper); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); }
+  .upload-zone{
+    border:2.5px dashed var(--wood-light);
+    border-radius:16px;
+    padding:22px;
+    text-align:center;
+    cursor:pointer;
+    background:rgba(140,163,126,0.06);
+    transition: background .2s ease;
+  }
+  .upload-zone:hover{ background:rgba(140,163,126,0.14); }
+  .upload-zone .icon{ font-size:34px; display:block; margin-bottom:6px;}
+  .upload-zone small{ color:var(--ink-soft); display:block; margin-top:6px;}
+  #photoInput, #cameraInput{ display:none; }
+  .preview-thumb{ max-width:100%; border-radius:12px; margin-top:10px; display:none; box-shadow:var(--shadow);}
+
+  .manual-add{ display:flex; gap:8px; margin-top:14px; }
+  .manual-add input{
+    flex:1; padding:12px 14px; border-radius:12px; border:2px solid rgba(107,66,39,0.2);
+    font-family:'Quicksand'; font-size:15px; background:var(--cream-2);
+  }
+  .manual-add input:focus{ outline:none; border-color:var(--sage); }
+  .manual-add button{ padding:0 16px; border-radius:12px; border:none; background:var(--terracotta); color:white; font-family:'Baloo 2'; font-weight:600; cursor:pointer; }
+
+  /* Table */
+  .table-wrap{
+    position:relative;
+    background: repeating-linear-gradient(90deg, var(--wood), var(--wood) 22px, var(--wood-dark) 22px, var(--wood-dark) 24px);
+    border-radius:16px;
+    padding:18px 14px 22px;
+    box-shadow: inset 0 4px 14px rgba(0,0,0,0.25), var(--shadow);
+    min-height:110px;
+  }
+  .table-wrap::before{
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:6px;
+    background:rgba(255,255,255,0.12);
+    border-radius:16px 16px 0 0;
+  }
+  .table-label{ font-family:'Baloo 2'; color:var(--cream); font-size:13px; opacity:.85; margin-bottom:10px; display:block; letter-spacing:.3px;}
+  .table-items{ display:flex; flex-wrap:wrap; gap:10px; }
+  .food-chip{
+    background:var(--paper); border-radius:12px; padding:8px 10px 8px 8px;
+    display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600;
+    box-shadow:0 4px 10px rgba(0,0,0,0.2);
+    animation: drop .35s ease;
+  }
+  @keyframes drop{ from{ transform:translateY(-14px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+  .food-chip .emoji{ font-size:18px; }
+  .food-chip .remove{ cursor:pointer; color:var(--ink-soft); font-weight:700; margin-left:2px; }
+  .food-chip.status-mal{ border:2px solid var(--alert); }
+  .food-chip.status-revisar{ border:2px solid var(--warn); }
+  .food-chip.status-fresco{ border:2px solid var(--ok); }
+  .status-note{ font-size:12px; margin-top:8px; color:var(--cream); opacity:.9;}
+
+  .alert-box{
+    background:#FDECE6; border-left:5px solid var(--alert); border-radius:10px;
+    padding:12px 14px; font-size:14px; color:#7A2E13; display:none;
+  }
+  .alert-box.show{ display:block; }
+
+  /* Quiz */
+  .quiz-question{ text-align:center; padding:6px 0 4px; }
+  .quiz-question h2{ font-size:23px; margin-bottom:6px; }
+  .quiz-question p.hint{ color:var(--ink-soft); font-size:14px; }
+  .options-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+  .options-grid.single-col{ grid-template-columns:1fr; }
+  .option-card{
+    background:var(--paper); border:2.5px solid transparent; border-radius:14px;
+    padding:16px 10px; text-align:center; cursor:pointer; box-shadow:var(--shadow);
+    transition: border-color .15s ease, transform .1s ease;
+    font-family:'Baloo 2'; font-weight:600; color:var(--wood-dark); font-size:15px;
+  }
+  .option-card .emoji{ font-size:26px; display:block; margin-bottom:6px; }
+  .option-card:hover{ transform:translateY(-2px); }
+  .option-card.selected{ border-color:var(--sage); background:rgba(140,163,126,0.14); }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; justify-content:center;}
+  .chip-toggle{
+    background:var(--paper); border:2px solid rgba(107,66,39,0.2); border-radius:20px;
+    padding:9px 16px; cursor:pointer; font-weight:600; font-size:14px; color:var(--ink);
+  }
+  .chip-toggle.selected{ background:var(--terracotta); color:white; border-color:var(--terracotta); }
+
+  /* Results */
+  .recipe-combo-card{
+    background:var(--paper); border-radius:16px; padding:16px; box-shadow:var(--shadow);
+    display:flex; gap:12px; align-items:flex-start; cursor:pointer; border:2px solid transparent;
+    transition:border-color .15s ease;
+  }
+  .recipe-combo-card:hover{ border-color:var(--sage); }
+  .recipe-combo-card .emoji{ font-size:34px; }
+  .recipe-combo-card h3{ font-size:18px; margin-bottom:4px; }
+  .recipe-combo-card p{ margin:0; font-size:13.5px; color:var(--ink-soft); line-height:1.4;}
+  .tag-row{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .tag{ font-size:11px; background:rgba(140,163,126,0.18); color:var(--sage-dark); padding:3px 8px; border-radius:10px; font-weight:700; }
+
+  /* Recipe detail */
+  .recipe-header{ text-align:center; padding:6px 0; }
+  .recipe-header .emoji{ font-size:44px; }
+  .recipe-meta{ display:flex; justify-content:center; gap:14px; margin-top:8px; font-size:13px; color:var(--ink-soft); flex-wrap:wrap;}
+  .recipe-meta span{ background:var(--cream-2); padding:5px 10px; border-radius:10px; }
+  .ingredient-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+  .ingredient-list li{
+    display:flex; justify-content:space-between; background:var(--cream-2);
+    padding:9px 12px; border-radius:10px; font-size:14.5px;
+  }
+  .ingredient-list li b{ color:var(--wood-dark); }
+  .steps-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; counter-reset:step;}
+  .steps-list li{
+    background:var(--paper); border-radius:12px; padding:12px 14px 12px 44px; position:relative;
+    box-shadow:var(--shadow); font-size:14.5px; line-height:1.5;
+  }
+  .steps-list li::before{
+    counter-increment:step; content:counter(step);
+    position:absolute; left:10px; top:12px;
+    width:24px; height:24px; border-radius:50%;
+    background:var(--sage); color:white; font-family:'Baloo 2'; font-weight:700;
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  .steps-list li .meta-inline{ display:block; margin-top:5px; font-size:12px; color:var(--terracotta-dark); font-weight:700;}
+  .tip-box{
+    background:rgba(140,163,126,0.14); border-radius:12px; padding:14px; font-size:14px;
+    border-left:4px solid var(--sage);
+  }
+  .tip-box b{ color:var(--sage-dark); }
+
+  .loading-state{ text-align:center; padding:30px 10px; color:var(--ink-soft); }
+  .spinner{
+    width:34px; height:34px; border:4px solid rgba(140,163,126,0.25); border-top-color:var(--sage);
+    border-radius:50%; margin:0 auto 12px; animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .footer-nav{ display:flex; justify-content:space-between; margin-top:auto; padding-top:14px; }
+
+  @media (max-width:420px){
+    .options-grid{ grid-template-columns:1fr; }
+    .hero h1{ font-size:26px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar" id="topbar" style="display:none;">
+    <div class="brand"><span class="brand-emoji">🥕</span><span class="brand-name display">Qué hay en la nevera</span></div>
+    <span onclick="openSettings()" style="cursor:pointer; font-size:20px;" title="Configurar clave de API">⚙️</span>
+  </div>
+
+  <!-- MODAL: CONFIGURACIÓN API KEY -->
+  <div id="settingsModal" style="display:none; position:fixed; inset:0; background:rgba(62,54,44,0.55); z-index:50; align-items:center; justify-content:center; padding:20px;">
+    <div class="card-panel" style="max-width:440px; width:100%;">
+      <h3 style="margin-bottom:10px;">🔑 Clave de API de Anthropic</h3>
+      <p style="font-size:13.5px; color:var(--ink-soft); line-height:1.5;">Para que el análisis de foto y las recetas de respaldo por IA funcionen fuera de claude.ai, necesitas pegar aquí tu propia clave de la API de Anthropic. Se guarda solo en este navegador (nunca sale de tu dispositivo salvo hacia la API de Anthropic) y solo tú la usas.</p>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="width:100%; padding:12px 14px; border-radius:12px; border:2px solid rgba(107,66,39,0.2); font-family:'Quicksand'; font-size:14px; margin-top:10px; background:var(--cream-2);">
+      <div class="btn-row" style="margin-top:14px;">
+        <button class="btn btn-primary" onclick="saveApiKey()">Guardar</button>
+        <button class="btn btn-ghost" onclick="closeSettings()">Cerrar</button>
+      </div>
+      <p style="font-size:12px; color:var(--ink-soft); margin-top:10px;">¿No tienes clave? Créala en <span style="text-decoration:underline;">console.anthropic.com</span> → API Keys. Sin ella, la app sigue funcionando en modo manual (sin foto por IA).</p>
+    </div>
+  </div>
+  <div class="progress-wrap" id="progressWrap" style="display:none; margin-bottom:16px;">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <!-- SCREEN 0: WELCOME -->
+  <section class="screen active" id="screen-welcome">
+    <div class="hero">
+      <span class="hero-emoji">🧊</span>
+      <h1>¿Qué hay en la nevera?</h1>
+      <p>Vacía tu frigorífico aquí dentro (sin ensuciar nada de verdad) y te digo qué puedes cocinar hoy. También te aviso, sin pelos en la lengua, de lo que ya ha cumplido su ciclo vital.</p>
+    </div>
+    <div class="fridge-illustration">
+      <span style="font-size:70px;">🥬🧀🥚🍅</span>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="goTo('screen-add')">Vamos a mirar qué tengo 👀</button>
+    <p style="text-align:center; font-size:12.5px; color:var(--ink-soft);">Funciona mejor con una foto, pero si te da pereza también puedes escribir lo que tienes.</p>
+  </section>
+
+  <!-- SCREEN 1: ADD FOOD -->
+  <section class="screen" id="screen-add">
+    <h2>Pon tu comida sobre la mesa</h2>
+    <p style="color:var(--ink-soft); font-size:14px; margin-top:-10px;">Haz una foto del interior de la nevera o añade ingredientes a mano. Puedes combinar ambas.</p>
+
+    <div class="card-panel">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('photoInput').click()">
+        <span class="icon">📸</span>
+        <strong>Sube o haz una foto de tu nevera</strong>
+        <small>La analizo y coloco lo que reconozca sobre la mesa</small>
+        <input type="file" id="photoInput" accept="image/*" capture="environment">
+      </div>
+      <img id="previewThumb" class="preview-thumb">
+      <div id="analyzeStatus"></div>
+
+      <div class="manual-add">
+        <input type="text" id="manualInput" placeholder="Añadir a mano, ej: pimiento rojo" list="commonFoods">
+        <button onclick="addManualItem()">Añadir</button>
+      </div>
+      <datalist id="commonFoods"></datalist>
+    </div>
+
+    <div class="alert-box" id="spoiledAlert"></div>
+
+    <div class="table-wrap">
+      <span class="table-label">🍽️ SOBRE LA MESA</span>
+      <div class="table-items" id="tableItems"></div>
+    </div>
+
+    <div class="footer-nav">
+      <button class="btn btn-ghost" onclick="goTo('screen-welcome')">← Volver</button>
+      <button class="btn btn-primary" id="continueToQuizBtn" disabled onclick="startQuiz()">Ya está todo, sigamos →</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: QUIZ -->
+  <section class="screen" id="screen-quiz">
+    <div id="quizContainer"></div>
+  </section>
+
+  <!-- SCREEN 3: LOADING RESULTS -->
+  <section class="screen" id="screen-loading">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p id="loadingText">Pensando combinaciones con lo que hay en la mesa...</p>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: RESULTS -->
+  <section class="screen" id="screen-results">
+    <h2>Tu combo de hoy 🍲</h2>
+    <p style="color:var(--ink-soft); font-size:14px; margin-top:-10px;">Elegido a partir de lo que tienes y de tus gustos. Toca una para ver el paso a paso.</p>
+    <div id="resultsList" style="display:flex; flex-direction:column; gap:12px;"></div>
+    <div class="footer-nav">
+      <button class="btn btn-ghost" onclick="goTo('screen-quiz')">← Cambiar respuestas</button>
+      <button class="btn btn-secondary" onclick="restartAll()">Volver a empezar</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 5: RECIPE DETAIL -->
+  <section class="screen" id="screen-recipe">
+    <div id="recipeDetail"></div>
+    <div class="footer-nav">
+      <button class="btn btn-ghost" onclick="goTo('screen-results')">← Ver otras opciones</button>
+      <button class="btn btn-secondary" onclick="restartAll()">Empezar de cero</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ============ DATOS ============ */
+
+const ICONS = [
+  [['pollo'], '🍗'], [['huevo'],'🥚'], [['patata','papa'],'🥔'], [['tomate'],'🍅'],
+  [['cebolla'],'🧅'], [['pimiento'],'🫑'], [['calabacin','calabacín'],'🥒'], [['zanahoria'],'🥕'],
+  [['arroz'],'🍚'], [['pasta','espagueti','macarron'],'🍝'], [['queso'],'🧀'], [['leche'],'🥛'],
+  [['yogur'],'🥣'], [['espinaca'],'🥬'], [['garbanzo'],'🌰'], [['lenteja'],'🫘'],
+  [['champiñon','champiñón','seta'],'🍄'], [['brocoli','brócoli'],'🥦'], [['limon','limón'],'🍋'],
+  [['ajo'],'🧄'], [['jamon','jamón'],'🥓'], [['salmon','salmón'],'🐟'], [['atun','atún'],'🐟'],
+  [['gamba'],'🍤'], [['tofu'],'⬜'], [['pan'],'🍞'], [['aguacate'],'🥑'], [['pepino'],'🥒'],
+  [['manzana'],'🍎'], [['platano','plátano'],'🍌'], [['naranja'],'🍊'], [['fresa'],'🍓'],
+  [['mantequilla'],'🧈'], [['nata'],'🥛'], [['sandia','sandía'],'🍉'], [['berenjena'],'🍆'],
+  [['chorizo'],'🌭'], [['bacon','panceta'],'🥓'], [['coco'],'🥥'], [['menta'],'🌿'],
+];
+function getIcon(name){
+  const n = name.toLowerCase();
+  for(const [keys, emoji] of ICONS){ if(keys.some(k=>n.includes(k))) return emoji; }
+  return '🍽️';
+}
+
+const RECIPES = [
+  {id:'tortilla', title:'Tortilla de patatas revolucionada', emoji:'🍳', style:'tradicional', spicy:false, lowSalt:true, diet:'omnivoro', allergens:['huevos'], goals:['sedentario','perdida_peso'], timeMin:35,
+   main:['patata','huevo','cebolla'], servings:2,
+   ingredients:[{n:'patatas',q:'3 medianas'},{n:'huevos',q:'5'},{n:'cebolla',q:'1'},{n:'aceite de oliva',q:'100 ml'},{n:'sal',q:'al gusto'}],
+   steps:[
+     {t:'Pela y corta las patatas en láminas finas, junto con la cebolla.', tiempo:null},
+     {t:'Fríe las patatas y la cebolla en el aceite a fuego medio hasta que estén tiernas.', tiempo:'15 min', temp:'fuego medio'},
+     {t:'Escurre el aceite y mezcla con los huevos batidos y una pizca de sal.'},
+     {t:'Cuaja la mezcla en una sartén antiadherente a fuego medio-bajo, dale la vuelta con un plato.', tiempo:'6-8 min', temp:'fuego medio-bajo'}
+   ],
+   tip:'Si quieres bajar el sodio, no le añadas sal a las patatas al freírlas: el huevo ya aporta sabor de sobra.'},
+
+  {id:'wok', title:'Wok de arroz con verduras y jengibre', emoji:'🍜', style:'innovadora', spicy:true, lowSalt:false, diet:'vegano', allergens:['gluten','soja'], goals:['deportista','sedentario'], timeMin:25,
+   main:['arroz','zanahoria','pimiento','brocoli'], servings:2,
+   ingredients:[{n:'arroz cocido (mejor de un día)',q:'300 g'},{n:'zanahoria',q:'1'},{n:'pimiento',q:'1'},{n:'brócoli',q:'150 g'},{n:'jengibre fresco',q:'1 cucharadita'},{n:'salsa de soja',q:'2 cucharadas'},{n:'guindilla en copos',q:'al gusto'}],
+   steps:[
+     {t:'Corta todas las verduras en trozos pequeños y homogéneos.'},
+     {t:'Saltea las verduras más duras primero (zanahoria, brócoli) en un wok bien caliente.', tiempo:'5 min', temp:'fuego alto'},
+     {t:'Añade el pimiento, el jengibre y la guindilla, saltea 2 minutos más.', tiempo:'2 min'},
+     {t:'Incorpora el arroz cocido y la soja, saltea todo junto hasta que esté caliente.', tiempo:'4 min', temp:'fuego alto'}
+   ],
+   tip:'El arroz de un día suelta menos almidón en el wok y queda más suelto, así que si tienes sobras, este es su momento de gloria.'},
+
+  {id:'curry-garbanzos', title:'Curry de garbanzos y espinacas', emoji:'🍛', style:'arriesgada', spicy:true, lowSalt:false, diet:'vegano', allergens:[], goals:['perdida_peso','sedentario'], timeMin:30,
+   main:['garbanzo','espinaca','tomate'], servings:2,
+   ingredients:[{n:'garbanzos cocidos',q:'400 g'},{n:'espinacas frescas',q:'150 g'},{n:'tomate triturado',q:'200 g'},{n:'leche de coco',q:'200 ml'},{n:'curry en polvo',q:'1 cucharada'},{n:'cebolla',q:'1/2'},{n:'ajo',q:'1 diente'}],
+   steps:[
+     {t:'Sofríe la cebolla y el ajo picados hasta que estén transparentes.', tiempo:'5 min', temp:'fuego medio'},
+     {t:'Añade el curry en polvo y remueve un minuto para que suelte aroma.', tiempo:'1 min'},
+     {t:'Incorpora el tomate triturado y cocina 5 minutos.', tiempo:'5 min'},
+     {t:'Añade los garbanzos y la leche de coco, cuece a fuego suave.', tiempo:'10 min', temp:'fuego suave'},
+     {t:'Agrega las espinacas al final y deja que se ablanden, 2 minutos.', tiempo:'2 min'}
+   ],
+   tip:'Si quieres subir el picante, añade guindilla fresca junto al ajo; si prefieres suavizarlo, reduce el curry a media cucharada.'},
+
+  {id:'ensalada-quinoa', title:'Ensalada templada de quinoa y salmón', emoji:'🥗', style:'autor', spicy:false, lowSalt:true, diet:'omnivoro', allergens:['pescado'], goals:['masa_muscular','deportista','perdida_peso'], timeMin:25,
+   main:['salmon','limon','aguacate'], servings:2,
+   ingredients:[{n:'quinoa',q:'150 g'},{n:'salmón fresco',q:'250 g'},{n:'aguacate',q:'1'},{n:'limón',q:'1'},{n:'aceite de oliva',q:'2 cucharadas'}],
+   steps:[
+     {t:'Cuece la quinoa en agua con una pizca de sal.', tiempo:'12 min', temp:'ebullición suave'},
+     {t:'Marca el salmón en una sartén con una gota de aceite.', tiempo:'3-4 min por lado', temp:'fuego medio-alto'},
+     {t:'Corta el aguacate en láminas y exprime el limón.'},
+     {t:'Monta el plato: quinoa templada, salmón desmigado y aguacate, riega con aceite y limón.'}
+   ],
+   tip:'El aguacate aporta grasas saludables que ayudan a absorber mejor las vitaminas liposolubles de la quinoa.'},
+
+  {id:'pasta-champi', title:'Pasta cremosa de champiñones', emoji:'🍝', style:'tradicional', spicy:false, lowSalt:false, diet:'vegetariano', allergens:['gluten','lactosa'], goals:['sedentario'], timeMin:25,
+   main:['pasta','champiñon','ajo'], servings:2,
+   ingredients:[{n:'pasta',q:'200 g'},{n:'champiñones',q:'250 g'},{n:'nata para cocinar',q:'150 ml'},{n:'ajo',q:'2 dientes'},{n:'queso rallado',q:'40 g'}],
+   steps:[
+     {t:'Cuece la pasta en agua con sal según el tiempo del paquete.', tiempo:'10-12 min'},
+     {t:'Saltea el ajo picado y los champiñones laminados hasta que doren.', tiempo:'8 min', temp:'fuego medio-alto'},
+     {t:'Añade la nata y cocina 3 minutos a fuego bajo.', tiempo:'3 min', temp:'fuego bajo'},
+     {t:'Mezcla con la pasta escurrida y espolvorea el queso rallado por encima.'}
+   ],
+   tip:'Si te sobra líquido de cocción de la pasta, un chorrito ayuda a ligar la salsa sin necesitar más nata.'},
+
+  {id:'tacos-pollo', title:'Tacos rápidos de pollo con pico de gallo', emoji:'🌮', style:'innovadora', spicy:true, lowSalt:false, diet:'omnivoro', allergens:['gluten'], goals:['deportista','masa_muscular'], timeMin:20,
+   main:['pollo','tomate','cebolla'], servings:2,
+   ingredients:[{n:'pechuga de pollo',q:'300 g'},{n:'tortillas de trigo',q:'6'},{n:'tomate',q:'2'},{n:'cebolla morada',q:'1/2'},{n:'lima',q:'1'},{n:'guindilla fresca',q:'al gusto'}],
+   steps:[
+     {t:'Corta el pollo en tiras y saltéalo con especias al gusto.', tiempo:'8 min', temp:'fuego medio-alto'},
+     {t:'Pica el tomate y la cebolla en dados pequeños, mezcla con lima y guindilla para el pico de gallo.'},
+     {t:'Calienta las tortillas ligeramente en una sartén seca.', tiempo:'30 seg por lado'},
+     {t:'Rellena las tortillas con el pollo y el pico de gallo.'}
+   ],
+   tip:'Si el picante no es lo tuyo, retira las semillas de la guindilla: ahí es donde se concentra la mayor parte.'},
+
+  {id:'buddha-tofu', title:'Buddha bowl de tofu al curry', emoji:'🥙', style:'arriesgada', spicy:false, lowSalt:false, diet:'vegano', allergens:['soja'], goals:['deportista','masa_muscular','sedentario'], timeMin:30,
+   main:['tofu','arroz','zanahoria'], servings:2,
+   ingredients:[{n:'tofu firme',q:'250 g'},{n:'arroz',q:'150 g'},{n:'zanahoria',q:'1'},{n:'curry en polvo',q:'1 cucharadita'},{n:'salsa de soja',q:'1 cucharada'}],
+   steps:[
+     {t:'Cuece el arroz según las instrucciones del paquete.', tiempo:'15 min'},
+     {t:'Corta el tofu en dados y marínalo con curry y soja 5 minutos.', tiempo:'5 min'},
+     {t:'Dora el tofu en una sartén hasta que quede crujiente por fuera.', tiempo:'8 min', temp:'fuego medio-alto'},
+     {t:'Ralla la zanahoria cruda y monta el bowl con arroz, tofu y zanahoria.'}
+   ],
+   tip:'Secar bien el tofu con papel de cocina antes de marinarlo es el truco para que quede crujiente y no se deshaga.'},
+
+  {id:'crema-calabacin', title:'Crema fría de calabacín y menta', emoji:'🥣', style:'autor', spicy:false, lowSalt:true, diet:'vegetariano', allergens:['lactosa'], goals:['perdida_peso'], timeMin:20,
+   main:['calabacin','menta','yogur'], servings:2,
+   ingredients:[{n:'calabacín',q:'2'},{n:'yogur natural',q:'1'},{n:'menta fresca',q:'unas hojas'},{n:'aceite de oliva',q:'1 cucharada'}],
+   steps:[
+     {t:'Cuece el calabacín troceado en agua hasta que esté tierno.', tiempo:'10 min', temp:'ebullición'},
+     {t:'Escurre y deja templar unos minutos.'},
+     {t:'Tritura con el yogur, la menta y el aceite hasta obtener una crema fina.'},
+     {t:'Enfría en la nevera al menos 20 minutos antes de servir.', tiempo:'20 min', temp:'nevera'}
+   ],
+   tip:'La menta no es solo decorativa: ayuda a la digestión y le da un punto fresco perfecto para los días de calor.'},
+
+  {id:'revuelto-gambas', title:'Revuelto de gambas y ajetes', emoji:'🍤', style:'tradicional', spicy:false, lowSalt:true, diet:'omnivoro', allergens:['crustaceos','huevos'], goals:['masa_muscular','deportista','perdida_peso'], timeMin:15,
+   main:['gamba','huevo','ajo'], servings:2,
+   ingredients:[{n:'gambas peladas',q:'200 g'},{n:'huevos',q:'4'},{n:'ajo',q:'2 dientes'},{n:'perejil',q:'un puñado'}],
+   steps:[
+     {t:'Saltea el ajo picado en aceite de oliva hasta que aromatice.', tiempo:'1 min', temp:'fuego medio'},
+     {t:'Añade las gambas y cocina hasta que cambien de color.', tiempo:'3 min', temp:'fuego medio-alto'},
+     {t:'Bate los huevos y añádelos a la sartén, remueve suavemente sin dejar de mover.', tiempo:'2 min', temp:'fuego bajo'},
+     {t:'Retira del fuego cuando el huevo esté cuajado pero jugoso, espolvorea perejil.'}
+   ],
+   tip:'Retira el revuelto del fuego un poco antes de que esté hecho del todo: el calor residual termina la cocción sin resecarlo.'},
+
+  {id:'poke-atun', title:'Poke bowl de atún picante', emoji:'🍚', style:'innovadora', spicy:true, lowSalt:false, diet:'omnivoro', allergens:['gluten','pescado','soja'], goals:['deportista','masa_muscular'], timeMin:20,
+   main:['atun','arroz','pepino'], servings:2,
+   ingredients:[{n:'atún fresco o en conserva',q:'250 g'},{n:'arroz',q:'150 g'},{n:'pepino',q:'1'},{n:'salsa de soja',q:'2 cucharadas'},{n:'guindilla en copos',q:'al gusto'}],
+   steps:[
+     {t:'Cuece el arroz y déjalo enfriar un poco.', tiempo:'15 min'},
+     {t:'Corta el atún y el pepino en dados pequeños.'},
+     {t:'Mezcla el atún con soja y guindilla, deja marinar 5 minutos.', tiempo:'5 min'},
+     {t:'Monta el bowl con el arroz de base, el atún marinado y el pepino.'}
+   ],
+   tip:'Si usas atún en conserva, escúrrelo bien para que no aguade el aliño picante.'},
+
+  {id:'lentejas', title:'Lentejas estofadas con chorizo', emoji:'🍲', style:'tradicional', spicy:false, lowSalt:false, diet:'omnivoro', allergens:['sulfitos'], goals:['sedentario','masa_muscular'], timeMin:45,
+   main:['lenteja','chorizo','zanahoria','tomate'], servings:3,
+   ingredients:[{n:'lentejas',q:'300 g'},{n:'chorizo',q:'100 g'},{n:'zanahoria',q:'1'},{n:'tomate triturado',q:'150 g'},{n:'cebolla',q:'1'},{n:'laurel',q:'1 hoja'}],
+   steps:[
+     {t:'Sofríe la cebolla y la zanahoria picadas.', tiempo:'8 min', temp:'fuego medio'},
+     {t:'Añade el chorizo en rodajas y el tomate, cocina 5 minutos más.', tiempo:'5 min'},
+     {t:'Incorpora las lentejas, el laurel y agua hasta cubrir.'},
+     {t:'Cuece a fuego lento hasta que las lentejas estén tiernas.', tiempo:'25-30 min', temp:'fuego lento'}
+   ],
+   tip:'Si buscas reducir la sal, el propio chorizo ya aporta bastante sabor salado: no hace falta añadir más al guiso.'},
+
+  {id:'hummus', title:'Hummus casero con crudités', emoji:'🥕', style:'tradicional', spicy:false, lowSalt:true, diet:'vegano', allergens:['sesamo'], goals:['perdida_peso','sedentario'], timeMin:15,
+   main:['garbanzo','limon'], servings:3,
+   ingredients:[{n:'garbanzos cocidos',q:'400 g'},{n:'tahini',q:'2 cucharadas'},{n:'limón',q:'1'},{n:'ajo',q:'1 diente pequeño'},{n:'aceite de oliva',q:'3 cucharadas'}],
+   steps:[
+     {t:'Escurre los garbanzos, reservando un poco del líquido de cocción.'},
+     {t:'Tritura todos los ingredientes juntos hasta obtener una crema fina.'},
+     {t:'Ajusta la textura añadiendo líquido de cocción si queda muy espeso.'},
+     {t:'Sirve con un chorrito de aceite y verduras crudas para mojar.'}
+   ],
+   tip:'Los garbanzos son una gran fuente de fibra y proteína vegetal: el hummus es de esos platos que llenan sin pesar.'},
+
+  {id:'berenjenas-rellenas', title:'Berenjenas rellenas al horno', emoji:'🍆', style:'autor', spicy:false, lowSalt:false, diet:'vegetariano', allergens:['lactosa'], goals:['sedentario','perdida_peso'], timeMin:45,
+   main:['berenjena','tomate','queso'], servings:2,
+   ingredients:[{n:'berenjenas',q:'2'},{n:'tomate triturado',q:'150 g'},{n:'queso rallado',q:'60 g'},{n:'cebolla',q:'1/2'}],
+   steps:[
+     {t:'Corta las berenjenas por la mitad y vacía parte de la pulpa.'},
+     {t:'Sofríe la pulpa con la cebolla picada y el tomate.', tiempo:'10 min', temp:'fuego medio'},
+     {t:'Rellena las berenjenas con el sofrito y cubre con queso rallado.'},
+     {t:'Hornea hasta que estén tiernas y doradas por encima.', tiempo:'25 min', temp:'200°C'}
+   ],
+   tip:'Pinchar la berenjena con un tenedor te dice si ya está en su punto: debe entrar sin resistencia.'},
+
+  {id:'salteado-tofu-brocoli', title:'Salteado picante de tofu y brócoli', emoji:'🥢', style:'arriesgada', spicy:true, lowSalt:false, diet:'vegano', allergens:['soja'], goals:['masa_muscular','deportista','perdida_peso'], timeMin:20,
+   main:['tofu','brocoli'], servings:2,
+   ingredients:[{n:'tofu firme',q:'250 g'},{n:'brócoli',q:'250 g'},{n:'salsa de soja',q:'2 cucharadas'},{n:'guindilla',q:'al gusto'},{n:'ajo',q:'1 diente'}],
+   steps:[
+     {t:'Corta el tofu en dados y el brócoli en arbolitos pequeños.'},
+     {t:'Saltea el brócoli al vapor-salteado hasta que esté al dente.', tiempo:'5 min', temp:'fuego alto'},
+     {t:'Añade el tofu, el ajo y la guindilla, saltea hasta dorar el tofu.', tiempo:'6 min', temp:'fuego alto'},
+     {t:'Riega con la soja al final y saltea 1 minuto más.', tiempo:'1 min'}
+   ],
+   tip:'El brócoli pierde vitamina C cuanto más se cocina: al dente no solo queda mejor, también conserva más nutrientes.'},
+
+  {id:'crepes-jamon-queso', title:'Crepes salados de jamón y queso', emoji:'🥞', style:'tradicional', spicy:false, lowSalt:false, diet:'omnivoro', allergens:['gluten','lactosa','huevos'], goals:['sedentario'], timeMin:25,
+   main:['jamon','queso','huevo','leche'], servings:2,
+   ingredients:[{n:'harina',q:'150 g'},{n:'leche',q:'300 ml'},{n:'huevos',q:'2'},{n:'jamón cocido',q:'100 g'},{n:'queso',q:'80 g'}],
+   steps:[
+     {t:'Bate la harina, la leche y los huevos hasta obtener una masa fina y sin grumos.'},
+     {t:'Cocina finas capas de masa en una sartén antiadherente.', tiempo:'1-2 min por lado', temp:'fuego medio'},
+     {t:'Rellena cada crepe con jamón y queso y dobla por la mitad.'},
+     {t:'Calienta el crepe relleno en la sartén hasta que el queso funda.', tiempo:'2 min', temp:'fuego medio-bajo'}
+   ],
+   tip:'Deja reposar la masa 10 minutos antes de cocinarla: los crepes salen más finos y elásticos.'},
+
+  {id:'gazpacho-sandia', title:'Gazpacho de sandía', emoji:'🍉', style:'autor', spicy:false, lowSalt:true, diet:'vegano', allergens:[], goals:['perdida_peso'], timeMin:15,
+   main:['sandia','tomate','pepino'], servings:3,
+   ingredients:[{n:'sandía',q:'400 g'},{n:'tomate',q:'2'},{n:'pepino',q:'1/2'},{n:'aceite de oliva',q:'2 cucharadas'},{n:'vinagre',q:'1 cucharada'}],
+   steps:[
+     {t:'Trocea toda la fruta y verdura, retirando las semillas de la sandía.'},
+     {t:'Tritura todo junto con el aceite y el vinagre hasta que quede fino.'},
+     {t:'Cuela si prefieres una textura más ligera.'},
+     {t:'Enfría en la nevera antes de servir.', tiempo:'30 min', temp:'nevera'}
+   ],
+   tip:'La sandía aporta dulzor natural y mucha agua: perfecto para hidratarte en días de calor sin pasarte con la sal.'},
+];
+
+/* ============ ESTADO ============ */
+let state = {
+  items: [],           // {name, status, source}
+  quizAnswers: {},
+  quizIndex: 0,
+  imageBase64: null,
+};
+
+const QUIZ_STEPS = [
+  {key:'style', title:'¿Qué rollo de receta te apetece hoy?', type:'single', multiCol:true,
+   options:[
+     {v:'tradicional', label:'Tradicional', emoji:'🍲'},
+     {v:'innovadora', label:'Innovadora', emoji:'✨'},
+     {v:'arriesgada', label:'Arriesgada', emoji:'🌶️'},
+     {v:'autor', label:'De autor', emoji:'🎩'},
+   ]},
+  {key:'spicy', title:'¿Le metemos picante?', type:'single', multiCol:true,
+   options:[ {v:true, label:'Sí, dame guerra', emoji:'🔥'}, {v:false, label:'No, gracias', emoji:'🧊'} ]},
+  {key:'salt', title:'¿Cómo llevas el tema de la sal?', type:'single', multiCol:true,
+   options:[ {v:'normal', label:'Sal normal', emoji:'🧂'}, {v:'poca', label:'Poca sal', emoji:'🌿'} ]},
+  {key:'diet', title:'¿Alguna restricción con la carne o el pescado?', type:'single', multiCol:true,
+   options:[
+     {v:'omnivoro', label:'Como de todo', emoji:'🍗'},
+     {v:'vegetariano', label:'Vegetariano', emoji:'🥕'},
+     {v:'vegano', label:'Vegano', emoji:'🌱'},
+   ]},
+  {key:'goal', title:'¿Qué buscas con esta receta?', type:'single', multiCol:true,
+   options:[
+     {v:'perdida_peso', label:'Perder peso', emoji:'⚖️'},
+     {v:'masa_muscular', label:'Ganar masa muscular', emoji:'💪'},
+     {v:'deportista', label:'Rendimiento deportivo', emoji:'🏃'},
+     {v:'sedentario', label:'Vida poco activa', emoji:'🛋️'},
+   ]},
+  {key:'allergies', title:'¿Alguna alergia o intolerancia que deba esquivar?', type:'multi', hint:'Los 14 alérgenos que verías señalados en la carta de cualquier restaurante. Marca los que necesites, o ninguno',
+   options:[
+     {v:'gluten', label:'Gluten'}, {v:'crustaceos', label:'Crustáceos'}, {v:'huevos', label:'Huevos'},
+     {v:'pescado', label:'Pescado'}, {v:'cacahuetes', label:'Cacahuetes'}, {v:'soja', label:'Soja'},
+     {v:'lactosa', label:'Lácteos'}, {v:'frutosSecos', label:'Frutos de cáscara'}, {v:'apio', label:'Apio'},
+     {v:'mostaza', label:'Mostaza'}, {v:'sesamo', label:'Sésamo'}, {v:'sulfitos', label:'Sulfitos'},
+     {v:'altramuces', label:'Altramuces'}, {v:'moluscos', label:'Moluscos'},
+   ]},
+  {key:'time', title:'¿Cuánto tiempo tienes hoy para cocinar?', type:'single', multiCol:true,
+   options:[
+     {v:20, label:'Voy con prisa', emoji:'⏱️'},
+     {v:45, label:'Tiempo normal', emoji:'🕰️'},
+     {v:999, label:'Sin prisa hoy', emoji:'🍷'},
+   ]},
+];
+
+/* ============ NAVEGACIÓN ============ */
+function openSettings(){
+  document.getElementById('apiKeyInput').value = getApiKey() || '';
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+function closeSettings(){ document.getElementById('settingsModal').style.display = 'none'; }
+function saveApiKey(){
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if(val) localStorage.setItem('nevera_api_key', val);
+  else localStorage.removeItem('nevera_api_key');
+  closeSettings();
+}
+function getApiKey(){ return localStorage.getItem('nevera_api_key'); }
+function apiHeaders(){
+  return {
+    "Content-Type": "application/json",
+    "x-api-key": getApiKey() || "",
+    "anthropic-version": "2023-06-01",
+    "anthropic-dangerous-direct-browser-access": "true"
+  };
+}
+
+function goTo(screenId){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  const showChrome = screenId !== 'screen-welcome';
+  document.getElementById('topbar').style.display = showChrome ? 'flex' : 'none';
+  document.getElementById('progressWrap').style.display = (screenId === 'screen-quiz') ? 'block' : 'none';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function restartAll(){
+  state = {items:[], quizAnswers:{}, quizIndex:0, imageBase64:null};
+  document.getElementById('tableItems').innerHTML='';
+  document.getElementById('previewThumb').style.display='none';
+  document.getElementById('analyzeStatus').innerHTML='';
+  document.getElementById('spoiledAlert').classList.remove('show');
+  updateContinueBtn();
+  goTo('screen-welcome');
+}
+
+/* ============ AÑADIR ALIMENTOS ============ */
+document.getElementById('commonFoods').innerHTML = [...new Set(RECIPES.flatMap(r=>r.ingredients.map(i=>i.n)))]
+  .map(n=>`<option value="${n}">`).join('');
+
+function renderTable(){
+  const wrap = document.getElementById('tableItems');
+  wrap.innerHTML = '';
+  state.items.forEach((it, idx)=>{
+    const chip = document.createElement('div');
+    chip.className = `food-chip status-${it.status}`;
+    chip.innerHTML = `<span class="emoji">${getIcon(it.name)}</span><span>${it.name}</span><span class="remove" onclick="removeItem(${idx})">✕</span>`;
+    wrap.appendChild(chip);
+  });
+  const spoiled = state.items.filter(i=>i.status==='mal');
+  const revisar = state.items.filter(i=>i.status==='revisar');
+  const box = document.getElementById('spoiledAlert');
+  if(spoiled.length || revisar.length){
+    let msg = '';
+    if(spoiled.length) msg += `🚮 Estos ya no tienen arreglo, mejor al cubo: <b>${spoiled.map(i=>i.name).join(', ')}</b>. `;
+    if(revisar.length) msg += `👀 Estos tienen pinta dudosa, échales un ojo antes de usarlos: <b>${revisar.map(i=>i.name).join(', ')}</b>.`;
+    box.innerHTML = msg;
+    box.classList.add('show');
+  } else {
+    box.classList.remove('show');
+  }
+  updateContinueBtn();
+}
+
+function removeItem(idx){ state.items.splice(idx,1); renderTable(); }
+
+function updateContinueBtn(){
+  const usable = state.items.filter(i=>i.status!=='mal').length;
+  document.getElementById('continueToQuizBtn').disabled = usable === 0;
+}
+
+function addManualItem(){
+  const input = document.getElementById('manualInput');
+  const val = input.value.trim();
+  if(!val) return;
+  state.items.push({name: val, status:'fresco', source:'manual'});
+  input.value='';
+  renderTable();
+}
+document.getElementById('manualInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addManualItem(); });
+
+document.getElementById('photoInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('analyzeStatus');
+  try{
+    const {base64, mediaType, dataUrl} = await resizeImageToBase64(file);
+    document.getElementById('previewThumb').src = dataUrl;
+    document.getElementById('previewThumb').style.display = 'block';
+    await analyzePhoto(base64, mediaType);
+  }catch(err){
+    console.error('Error preparando la imagen:', err);
+    statusEl.innerHTML = `<p style="font-size:13px; color:var(--alert); margin-top:8px;">No he podido leer esa imagen. Prueba con otra foto o añade los ingredientes a mano ahí abajo 👇</p>`;
+  }
+});
+
+// Redimensiona la imagen en el navegador antes de enviarla: las fotos de móvil
+// a resolución completa son demasiado pesadas y hacían fallar la llamada a la IA.
+function resizeImageToBase64(file, maxDim = 1200, quality = 0.82){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.onload = (ev)=>{
+      const img = new Image();
+      img.onerror = () => reject(new Error('No se pudo decodificar la imagen'));
+      img.onload = ()=>{
+        let {width, height} = img;
+        if(width > maxDim || height > maxDim){
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg', dataUrl });
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Extrae el primer array JSON válido de un texto, aunque venga con texto alrededor.
+function extractJsonArray(text){
+  const start = text.indexOf('[');
+  const end = text.lastIndexOf(']');
+  if(start === -1 || end === -1 || end < start) throw new Error('La respuesta no contenía un array JSON: ' + text.slice(0,200));
+  return JSON.parse(text.slice(start, end+1));
+}
+
+async function analyzePhoto(base64, mediaType){
+  const statusEl = document.getElementById('analyzeStatus');
+  if(!getApiKey()){
+    statusEl.innerHTML = `<p style="font-size:13px; color:var(--warn); margin-top:8px;">Para analizar fotos con IA necesitas añadir tu clave de API (⚙️ arriba a la derecha). Mientras tanto, añade los ingredientes a mano ahí abajo 👇</p>`;
+    return;
+  }
+  statusEl.innerHTML = `<div class="loading-state" style="padding:14px;"><div class="spinner"></div><p style="margin:0; font-size:13px;">Mirando qué hay en la foto...</p></div>`;
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: apiHeaders(),
+      body: JSON.stringify({
+        model: "claude-sonnet-5",
+        max_tokens: 1000,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+            { type: "text", text: "Analiza esta foto del interior de una nevera o despensa. Devuelve SOLO un array JSON (sin texto adicional, sin markdown) con los alimentos identificables. Cada elemento: {\"name\": nombre en español en minúsculas y singular, \"status\": uno de \"fresco\", \"revisar\", \"mal\"}. Usa \"mal\" solo si ves signos claros de moho, podredumbre o caducidad evidente; \"revisar\" si tiene pinta dudosa pero no es seguro; \"fresco\" en el resto de casos. No incluyas envases o utensilios, solo comida. Si no reconoces ningún alimento con claridad, devuelve un array vacío []." }
+          ]
+        }]
+      })
+    });
+    const data = await response.json();
+    if(!response.ok){
+      const msg = (data && data.error && data.error.message) ? data.error.message : `Error HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+    const text = (data.content || []).map(b=>b.text||'').join('');
+    const parsed = extractJsonArray(text);
+    parsed.forEach(f=>{
+      if(f && f.name) state.items.push({name:f.name, status:f.status||'fresco', source:'foto'});
+    });
+    if(parsed.length){
+      statusEl.innerHTML = `<p style="font-size:13px; color:var(--sage-dark); margin-top:8px;">✅ He añadido ${parsed.length} alimentos a la mesa. Revisa y ajusta si algo no cuadra.</p>`;
+    } else {
+      statusEl.innerHTML = `<p style="font-size:13px; color:var(--warn); margin-top:8px;">No he reconocido alimentos claros en la foto. Añádelos a mano ahí abajo 👇</p>`;
+    }
+    renderTable();
+  }catch(err){
+    console.error('Error analizando la foto:', err);
+    statusEl.innerHTML = `<p style="font-size:13px; color:var(--alert); margin-top:8px;">No he podido analizar la foto (${err.message || 'sin conexión'}). Añade los ingredientes a mano ahí abajo 👇</p>`;
+  }
+}
+
+/* ============ QUIZ ============ */
+function startQuiz(){
+  state.quizIndex = 0;
+  goTo('screen-quiz');
+  renderQuizStep();
+}
+
+function renderQuizStep(){
+  const step = QUIZ_STEPS[state.quizIndex];
+  const container = document.getElementById('quizContainer');
+  document.getElementById('progressBar').style.width = `${(state.quizIndex/QUIZ_STEPS.length)*100}%`;
+
+  let optionsHtml = '';
+  if(step.type === 'single'){
+    optionsHtml = `<div class="options-grid ${step.multiCol?'':'single-col'}">` +
+      step.options.map(o=>`<div class="option-card" onclick='selectSingle("${step.key}", ${JSON.stringify(o.v)})'>
+        ${o.emoji?`<span class="emoji">${o.emoji}</span>`:''}${o.label}
+      </div>`).join('') + `</div>`;
+  } else if(step.type === 'multi'){
+    const selected = state.quizAnswers[step.key] || [];
+    optionsHtml = `<div class="chip-row">` +
+      step.options.map(o=>`<div class="chip-toggle ${selected.includes(o.v)?'selected':''}" onclick='toggleMulti("${step.key}", "${o.v}", this)'>${o.label}</div>`).join('') +
+      `</div><button class="btn btn-primary btn-block" style="margin-top:18px;" onclick="nextQuizStep()">Continuar</button>`;
+  }
+
+  container.innerHTML = `
+    <div class="quiz-question">
+      <h2>${step.title}</h2>
+      ${step.hint?`<p class="hint">${step.hint}</p>`:''}
+    </div>
+    ${optionsHtml}
+    ${state.quizIndex>0 ? `<button class="btn btn-ghost" style="margin-top:10px;" onclick="prevQuizStep()">← Anterior</button>` : ''}
+  `;
+}
+
+function selectSingle(key, value){
+  state.quizAnswers[key] = value;
+  nextQuizStep();
+}
+function toggleMulti(key, value, el){
+  if(!state.quizAnswers[key]) state.quizAnswers[key] = [];
+  const arr = state.quizAnswers[key];
+  const idx = arr.indexOf(value);
+  if(idx>-1) arr.splice(idx,1); else arr.push(value);
+  el.classList.toggle('selected');
+}
+function nextQuizStep(){
+  if(state.quizIndex < QUIZ_STEPS.length - 1){
+    state.quizIndex++;
+    renderQuizStep();
+  } else {
+    document.getElementById('progressBar').style.width = '100%';
+    setTimeout(computeResults, 350);
+  }
+}
+function prevQuizStep(){
+  if(state.quizIndex>0){ state.quizIndex--; renderQuizStep(); }
+}
+
+/* ============ MATCHING ============ */
+function normalize(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function scoreRecipe(recipe, fridgeNames){
+  const answers = state.quizAnswers;
+  // filtros duros
+  if(answers.diet === 'vegano' && recipe.diet !== 'vegano') return -1;
+  if(answers.diet === 'vegetariano' && recipe.diet === 'omnivoro') return -1;
+  if(answers.time && recipe.timeMin > answers.time) return -1;
+  const allergySel = answers.allergies || [];
+  if(allergySel.some(a=>recipe.allergens.includes(a))) return -1;
+
+  let score = 0;
+  if(answers.style === recipe.style) score += 3;
+  if(answers.spicy === recipe.spicy) score += 2;
+  if(answers.salt === 'poca' && recipe.lowSalt) score += 1.5;
+  if(answers.goal && recipe.goals && recipe.goals.includes(answers.goal)) score += 2.5;
+
+  const overlap = recipe.main.filter(m => fridgeNames.some(f=>f.includes(m) || m.includes(f))).length;
+  score += overlap * 2;
+  return score;
+}
+
+function computeResults(){
+  goTo('screen-loading');
+  document.getElementById('loadingText').textContent = 'Barajando combinaciones con lo que tienes...';
+
+  const fridgeNames = state.items.filter(i=>i.status!=='mal').map(i=>normalize(i.name));
+  const scored = RECIPES.map(r=>({r, s: scoreRecipe(r, fridgeNames)}))
+    .filter(x=>x.s >= 0)
+    .sort((a,b)=>b.s - a.s);
+
+  setTimeout(async ()=>{
+    let chosen = scored.slice(0,3).map(x=>x.r);
+    if(chosen.length < 2){
+      // apoyo de IA para generar receta a medida
+      document.getElementById('loadingText').textContent = 'No tengo nada curado que encaje del todo, pidiendo ayuda extra a la IA...';
+      try{
+        const aiRecipe = await generateAIRecipe(fridgeNames);
+        if(aiRecipe) chosen.push(aiRecipe);
+      }catch(err){ /* si falla, seguimos con lo que haya */ }
+    }
+    renderResults(chosen);
+    goTo('screen-results');
+  }, 500);
+}
+
+async function generateAIRecipe(fridgeNames){
+  if(!getApiKey()) throw new Error('Sin clave de API configurada');
+  const answers = state.quizAnswers;
+  const goalLabels = {perdida_peso:'perder peso', masa_muscular:'ganar masa muscular', deportista:'rendimiento deportivo', sedentario:'vida poco activa/sedentaria'};
+  const prompt = `Eres un asistente de cocina con conocimientos de nutrición, tono cercano y desenfadado pero riguroso. 
+Ingredientes disponibles: ${fridgeNames.join(', ') || 'pocos, improvisa con básicos de despensa'}.
+Preferencias: estilo ${answers.style}, picante: ${answers.spicy?'sí':'no'}, sal: ${answers.salt}, dieta: ${answers.diet}, objetivo nutricional: ${goalLabels[answers.goal]||'sin objetivo concreto'}, alergias a evitar: ${(answers.allergies||[]).join(', ')||'ninguna'}, tiempo máximo ${answers.time} minutos.
+Ajusta las cantidades y el enfoque de la receta (proteína, ración, técnica) para que encaje con ese objetivo nutricional. Genera UNA receta que encaje. Responde SOLO con JSON (sin markdown, sin texto extra) con esta forma exacta:
+{"title": "...", "emoji": "un emoji", "servings": 2, "ingredients":[{"n":"nombre","q":"cantidad"}], "steps":[{"t":"instrucción","tiempo":"X min o null","temp":"temperatura o null"}], "tip":"consejo nutricional breve relacionado con el objetivo"}`;
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: apiHeaders(),
+    body: JSON.stringify({
+      model: "claude-sonnet-5",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  const data = await response.json();
+  let text = (data.content || []).map(b=>b.text||'').join('');
+  text = text.replace(/```json|```/g,'').trim();
+  const parsed = JSON.parse(text);
+  parsed.id = 'ai-'+Date.now();
+  parsed.style = answers.style; parsed.spicy = answers.spicy; parsed.lowSalt = answers.salt==='poca';
+  parsed.diet = answers.diet; parsed.allergens = answers.allergies||[]; parsed.timeMin = answers.time;
+  parsed.goals = answers.goal ? [answers.goal] : [];
+  parsed.main = fridgeNames;
+  return parsed;
+}
+
+/* ============ RESULTADOS ============ */
+const GOAL_LABELS = {perdida_peso:'pérdida de peso', masa_muscular:'masa muscular', deportista:'rendimiento deportivo', sedentario:'vida poco activa'};
+let currentResults = [];
+let currentQuizAnswers = {};
+function renderResults(recipes){
+  currentResults = recipes;
+  currentQuizAnswers = {...state.quizAnswers};
+  const list = document.getElementById('resultsList');
+  if(recipes.length === 0){
+    list.innerHTML = `<p style="text-align:center; color:var(--ink-soft);">No he encontrado nada que encaje del todo. Prueba a cambiar alguna respuesta del cuestionario.</p>`;
+    return;
+  }
+  list.innerHTML = recipes.map((r, idx)=>`
+    <div class="recipe-combo-card" onclick="openRecipe(${idx})">
+      <span class="emoji">${r.emoji||'🍽️'}</span>
+      <div>
+        <h3>${r.title}</h3>
+        <p>${(r.ingredients||[]).slice(0,4).map(i=>i.n).join(', ')}${(r.ingredients||[]).length>4?'...':''}</p>
+        <div class="tag-row">
+          ${r.style?`<span class="tag">${r.style}</span>`:''}
+          ${r.timeMin?`<span class="tag">${r.timeMin} min</span>`:''}
+          ${r.spicy?`<span class="tag">picante</span>`:''}
+          ${(r.goals&&r.goals.includes(currentQuizAnswers.goal))?`<span class="tag">${GOAL_LABELS[currentQuizAnswers.goal]}</span>`:''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openRecipe(idx){
+  const r = currentResults[idx];
+  const detail = document.getElementById('recipeDetail');
+  detail.innerHTML = `
+    <div class="recipe-header">
+      <span class="emoji">${r.emoji||'🍽️'}</span>
+      <h2>${r.title}</h2>
+      <div class="recipe-meta">
+        ${r.timeMin?`<span>⏱️ ${r.timeMin} min</span>`:''}
+        ${r.servings?`<span>🍽️ ${r.servings} raciones</span>`:''}
+        ${r.style?`<span>🎨 ${r.style}</span>`:''}
+        ${(r.goals&&r.goals.includes(currentQuizAnswers.goal))?`<span>🎯 ${GOAL_LABELS[currentQuizAnswers.goal]}</span>`:''}
+      </div>
+    </div>
+    <h3 style="margin:14px 0 10px;">Ingredientes</h3>
+    <ul class="ingredient-list">
+      ${r.ingredients.map(i=>`<li><span>${getIcon(i.n)} ${i.n}</span><b>${i.q}</b></li>`).join('')}
+    </ul>
+    <h3 style="margin:18px 0 10px;">Cómo se hace</h3>
+    <ul class="steps-list">
+      ${r.steps.map(s=>`<li>${s.t}${(s.tiempo||s.temp)?`<span class="meta-inline">${s.tiempo?('⏱️ '+s.tiempo):''} ${s.temp?('🌡️ '+s.temp):''}</span>`:''}</li>`).join('')}
+    </ul>
+    ${r.tip?`<div class="tip-box" style="margin-top:16px;"><b>Apunte nutricional:</b> ${r.tip}</div>`:''}
+  `;
+  goTo('screen-recipe');
+}
+
+renderTable();
+</script>
+</body>
+</html>
